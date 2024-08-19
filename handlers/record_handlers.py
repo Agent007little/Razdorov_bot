@@ -1,8 +1,12 @@
 import aiohttp
 from aiogram import Router, F
+from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import default_state
 from aiogram.types import CallbackQuery
 from aiohttp import ClientConnectorError
 
+from States.States import FSMDefaultChoice
 from database.database import get_phone_from_db, save_record_in_db
 
 from config_data.logger_config import setup_logger
@@ -15,8 +19,8 @@ router = Router()
 
 
 # Хэндлер выводит список подарков пользователя в виде инлайн клавиатуры.
-@router.callback_query(F.data == "record")
-async def record_check(callback: CallbackQuery):
+@router.callback_query(F.data == "record", StateFilter(FSMDefaultChoice.choice))
+async def record_check(callback: CallbackQuery, state: FSMContext):
     chat_id = callback.message.chat.id
     phone = await get_phone_from_db(chat_id)  # Получаем номер телефона из БД
 
@@ -46,3 +50,4 @@ async def record_check(callback: CallbackQuery):
         except ClientConnectorError as e:
             print(f"Error: {e} Нет подключения к серверу")
     await callback.answer()
+    await state.set_state(default_state) # возвращаем в дефолтное состояние
